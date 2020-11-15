@@ -25,4 +25,3 @@ select count(*) from songs; - we have 44688 songs in database
 
 select count(*) from users; - we have 104 users in database
 
-select count(*) from artist; - we have 14896 artists in database
