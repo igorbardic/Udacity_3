@@ -19,7 +19,6 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 
 staging_events_table_create= ("""
 CREATE TABLE IF NOT EXISTS staging_events (
-  event_id       INT IDENTITY(0,1) ,
   artist         varchar(255)      ,    
   auth           varchar(50)       ,
   first_name     varchar(255)      ,
@@ -37,8 +36,7 @@ CREATE TABLE IF NOT EXISTS staging_events (
   status         integer           ,
   ts             bigint            ,
   user_agent     varchar(200)      ,
-  user_id        integer      ,
-  PRIMARY KEY (event_id));
+  user_id        integer           );
 """)
 
 staging_songs_table_create = ("""
@@ -60,7 +58,7 @@ songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplay (
   sp_songplay_id    BIGINT IDENTITY(0,1),
   sp_start_time     TIMESTAMP       not null,
-  sp_user_id        integer         ,
+  sp_user_id        integer         not null,
   sp_level          varchar(50)     ,
   sp_song_id        varchar(255)    not null,
   sp_artist_id      varchar(255)    not null,
@@ -72,40 +70,47 @@ CREATE TABLE IF NOT EXISTS songplay (
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-  u_user_id        integer         sortkey,
+  u_user_id        integer IDENTITY(0,1) not null,
   u_first_name     varchar(255)    ,
   u_last_name      varchar(255)    ,
   u_gender         varchar(1)      ,
-  u_level          varchar(50)     ) diststyle all;
+  u_level          varchar(50)     ,
+  PRIMARY KEY (u_user_id)) diststyle all;
 """)
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-  s_song_id        varchar(255)    not null    sortkey,
+  s_song_key       bigint IDENTITY(0,1),
+  s_song_id        varchar(255)    not null,
   s_title          varchar(255)    ,
-  s_artist_id      varchar(255)    ,
-  s_year           integer         not null,
-  s_duration       integer         not null) diststyle all;
+  s_artist_id      varchar(255)    not null,
+  s_year           integer         ,
+  s_duration       integer         ,
+  PRIMARY KEY (s_song_key)) diststyle all;
 """)
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artist (
-  a_artist_id        varchar(255)  not null    sortkey,
+  a_artist_key       bigint IDENTITY(0,1),
+  a_artist_id        varchar(255)  not null,
   a_name             varchar(255)  ,
   a_location         varchar(255)  ,
   a_latitude         numeric       ,
-  a_longitude        numeric        ) diststyle all;
+  a_longitude        numeric       ,
+  PRIMARY KEY (a_artist_key)) diststyle all;
 """)
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time (
-  t_start_time        TIMESTAMP   not null    sortkey,
+  t_time_key          bigint  IDENTITY(0,1),
+  t_start_time        TIMESTAMP   not null,
   t_hour              integer     ,
   t_day               integer     ,
   t_week              integer     ,
   t_month             integer     ,
   t_year              integer     ,
-  t_weekday           integer     ) diststyle all;
+  t_weekday           integer     ,
+  PRIMARY KEY (t_time_key)) diststyle all;
 """)
 
 # STAGING TABLES
@@ -160,7 +165,7 @@ SELECT DISTINCT user_id,
 
 song_table_insert = ("""
 INSERT INTO songs (s_song_id, s_title, s_artist_id, s_year, s_duration)
-SELECT song_id,
+SELECT DISTINCT song_id,
        title,
        artist_id,
        year,
@@ -170,7 +175,7 @@ SELECT song_id,
 
 artist_table_insert = ("""
 INSERT INTO artist (a_artist_id, a_name, a_location, a_latitude, a_longitude)
-SELECT artist_id,
+SELECT DISTINCT artist_id,
        artist_name,
        artist_location,
        artist_latitude,
@@ -180,14 +185,16 @@ SELECT artist_id,
 
 time_table_insert = ("""
   INSERT INTO time (t_start_time, t_hour, t_day, t_week, t_month, t_year, t_weekday)
-      SELECT DISTINCT sp_start_time,
-                      EXTRACT(HOUR from sp_start_time) AS hour,
-                      EXTRACT(DAY from sp_start_time) AS day,
-                      EXTRACT(WEEK from sp_start_time) AS week,
-                      EXTRACT(MONTH from sp_start_time) AS month,
-                      EXTRACT(YEAR from sp_start_time) AS year,
-                      EXTRACT(DOW from sp_start_time) AS weekday
-      FROM  songplay
+      Select distinct ts,
+                      t_start_time,
+                      EXTRACT(HOUR FROM t_start_time) As t_hour,
+                      EXTRACT(DAY FROM t_start_time) As t_day,
+                      EXTRACT(WEEK FROM t_start_time) As t_week,
+                      EXTRACT(MONTH FROM t_start_time) As t_month, 
+                      EXTRACT(YEAR FROM t_start_time) As t_year,
+                      EXTRACT(DOW FROM t_start_time) As t_weekday
+                      FROM (SELECT distinct ts,'1970-01-01'::date + ts/1000 * interval '1 second' as t_start_time
+                      FROM staging_events
 """)
 
 
