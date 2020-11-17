@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS songplay (
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-  u_user_id        integer IDENTITY(0,1) not null,
+  u_user_id        integer         not null,
   u_first_name     varchar(255)    ,
   u_last_name      varchar(255)    ,
   u_gender         varchar(1)      ,
@@ -80,29 +80,26 @@ CREATE TABLE IF NOT EXISTS users (
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-  s_song_key       bigint IDENTITY(0,1),
   s_song_id        varchar(255)    not null,
   s_title          varchar(255)    ,
   s_artist_id      varchar(255)    not null,
   s_year           integer         ,
   s_duration       integer         ,
-  PRIMARY KEY (s_song_key)) diststyle all;
+  PRIMARY KEY (s_song_id)) diststyle all;
 """)
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artist (
-  a_artist_key       bigint IDENTITY(0,1),
   a_artist_id        varchar(255)  not null,
   a_name             varchar(255)  ,
   a_location         varchar(255)  ,
   a_latitude         numeric       ,
   a_longitude        numeric       ,
-  PRIMARY KEY (a_artist_key)) diststyle all;
+  PRIMARY KEY (a_artist_id)) diststyle all;
 """)
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time (
-  t_time_key          bigint  IDENTITY(0,1),
   t_start_time        TIMESTAMP   not null,
   t_hour              integer     ,
   t_day               integer     ,
@@ -110,7 +107,7 @@ CREATE TABLE IF NOT EXISTS time (
   t_month             integer     ,
   t_year              integer     ,
   t_weekday           integer     ,
-  PRIMARY KEY (t_time_key)) diststyle all;
+  PRIMARY KEY (t_start_time)) diststyle all;
 """)
 
 # STAGING TABLES
@@ -185,16 +182,15 @@ SELECT DISTINCT artist_id,
 
 time_table_insert = ("""
   INSERT INTO time (t_start_time, t_hour, t_day, t_week, t_month, t_year, t_weekday)
-      Select distinct ts,
-                      t_start_time,
+      Select distinct t_start_time,
                       EXTRACT(HOUR FROM t_start_time) As t_hour,
                       EXTRACT(DAY FROM t_start_time) As t_day,
                       EXTRACT(WEEK FROM t_start_time) As t_week,
                       EXTRACT(MONTH FROM t_start_time) As t_month, 
                       EXTRACT(YEAR FROM t_start_time) As t_year,
                       EXTRACT(DOW FROM t_start_time) As t_weekday
-                      FROM (SELECT distinct ts,'1970-01-01'::date + ts/1000 * interval '1 second' as t_start_time
-                      FROM staging_events
+                      FROM (SELECT distinct ts, TIMESTAMP 'epoch' + (ts / 1000) * INTERVAL '1 second' as t_start_time
+                      FROM staging_events);
 """)
 
 
