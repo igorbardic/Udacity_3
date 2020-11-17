@@ -19,10 +19,10 @@ Finnaly we test our data with sql query on Amazon Redshift.
 
 select * from songplay where sp_user_id = 10;
 
-select count(*) from songplay; - we have 329 songplays users who played songs 
+select count(*) from songplay; - we have 1645 songplays users who played songs 
 
-select count(*) from songs; - we have 44688 songs in database
+select count(*) from songs; - we have 74480 songs in database
 
-select count(*) from users; - we have 104 users in database
+select count(*) from users; - we have 520 users in database
 
-
+select count(*) from artist; - we have 50115 users in database
